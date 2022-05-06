@@ -86,7 +86,7 @@ class SocialGroup(models.Model):
         verbose_name=("posts"),
         blank=True,
     )
-    admin_username = models.ForeignKey(User, related_name='admin', on_delete=models.CASCADE)
+    admin_username = models.ForeignKey(User, related_name='admin', on_delete=models.CASCADE) #unable to figure out how to give only one user special permissions
     objects = SocialGroupManager()
     # owner = register_role("Owner")
     # grant_permission(Post, owner, "edit")
