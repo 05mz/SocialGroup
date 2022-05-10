@@ -5,6 +5,11 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, Permission, GroupManager, Group
 # from permissions.utils import register_role, grant_permission
 
+import smtplib, ssl
+import datetime as dt
+import time
+
+
 
 class User(AbstractUser):
     role = models.CharField(max_length=10, null=True)
@@ -56,9 +61,9 @@ class Post(models.Model):
     )
     # comments = models.CharField(max_length=200)
     access_level = models.IntegerField(choices=ACCESS_LEVEL_CHOICES, default=ACCESS_PRIVATE)
-
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
 
 
 class SocialGroupManager(models.Manager):
@@ -69,6 +74,12 @@ class SocialGroupManager(models.Manager):
 
 
 class SocialGroup(models.Model):
+    # ADMIN = 1
+    # NONADMIN = 0
+    # ROLE_CHOICES = (
+    #     (ADMIN, 'admin'),
+    #     (NONADMIN, 'non admin'),
+    # )
     name = models.CharField(("group_name"), max_length=150, unique=True)
     group_permissions = models.ManyToManyField(
         Permission,
@@ -86,18 +97,31 @@ class SocialGroup(models.Model):
         verbose_name=("posts"),
         blank=True,
     )
-    admin_username = models.ForeignKey(User, related_name='admin', on_delete=models.CASCADE) #unable to figure out how to give only one user special permissions
+    admin_username = models.ForeignKey(User, related_name='admin', on_delete=models.CASCADE)
     objects = SocialGroupManager()
+
+
     # owner = register_role("Owner")
     # grant_permission(Post, owner, "edit")
 
     class Meta:
         verbose_name = ("social_group")
         verbose_name_plural = ("social_groups")
+        permissions = (
+            ("edit", "Can edit group's posts"),
+            ("view", "Can view group's posts"),
+        )
+
+    # def has_change_permission(self, request, obj=Post):
+    #     if request.user.username == self.admin_username:
+    #         return True
 
     def __str__(self):
         return self.name
 
     def natural_key(self):
         return (self.name,)
+
+
+
 
