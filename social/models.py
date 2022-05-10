@@ -10,7 +10,6 @@ import datetime as dt
 import time
 
 
-
 class User(AbstractUser):
     role = models.CharField(max_length=10, null=True)
     id = models.AutoField(primary_key=True)
@@ -45,6 +44,11 @@ class Comment(models.Model):
         return '{} by {}'.format(self.body, self.name)
 
 
+# def curr_user(request):
+#     current_user = request.user.username
+#     return current_user
+
+
 class Post(models.Model):
     ACCESS_PUBLIC = 0
     ACCESS_PRIVATE = 1
@@ -63,7 +67,6 @@ class Post(models.Model):
     access_level = models.IntegerField(choices=ACCESS_LEVEL_CHOICES, default=ACCESS_PRIVATE)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-
 
 
 class SocialGroupManager(models.Manager):
@@ -121,7 +124,4 @@ class SocialGroup(models.Model):
 
     def natural_key(self):
         return (self.name,)
-
-
-
 
