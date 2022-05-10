@@ -1,4 +1,4 @@
-    from django.contrib import admin
+from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User, Post, Comment, SocialGroup
 from django.core.mail import mail_admins
@@ -12,6 +12,20 @@ class CoreBaseAdmin(admin.ModelAdmin):
 @admin.register(Post)
 class PostAdmin(CoreBaseAdmin):
     list_display = ['id', 'created_by', ]
+    readonly_fields = ['created_by']
+
+    def save_model(self, request, obj, form, change):
+        user = request.user
+        instance = form.save(commit=False)
+        if not change or not instance.created_by:
+            instance.created_by = user
+        object_id = str(obj.id)
+        sg = SocialGroup.objects.filter(posts__id__iexact=object_id)
+        if change and not sg.filter.objects(user_list__id__iexact= str(request.user.pk)):
+            instance.comments = obj.comments
+        instance.save()
+        form.save_m2m()
+        return instance
 
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
@@ -36,7 +50,6 @@ class PostAdmin(CoreBaseAdmin):
     # def has_change_permission(self, request, obj=None):
     #     if request.user.role == 'admin':
     #         return True
-
 
 @admin.register(User)
 class ExtendedUserAdmin(UserAdmin):
@@ -83,20 +96,21 @@ class ExtendSocialGroup(CoreBaseAdmin):
         if request.user.username == obj.admin_username:
             return True
 
-    # def has_change_permission(self, request, obj=None):
-    #     if request.user.role == 'admin':
-    #         return True
+    def has_change_permission(self, request, obj=None):
+        if request.user.role == 'admin':
+            return True
 #
 # class ExtendNotifications(Notifications):
 #     pass
 
 admin.site.register(Comment)
 
+
 # Python code to illustrate Sending mail from
 # your Gmail account
 import smtplib
 MAIL_USERNAME='elzaidh@gmail.com'
-MAIL_PASSWORD='ethan619'
+MAIL_PASSWORD='*******'
 # creates SMTP session
 s = smtplib.SMTP('smtp.gmail.com', 587)
 
@@ -108,7 +122,7 @@ s.login(MAIL_USERNAME, MAIL_PASSWORD)
 
 # message to be sent
 message = """
-          
+
           New Post has been created, click http://127.0.0.1:8000/social/post/ to view Regards,Team Draup"""
 
 # sending the mail
