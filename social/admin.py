@@ -1,6 +1,8 @@
-from django.contrib import admin
+    from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User, Post, Comment, SocialGroup
+from django.core.mail import mail_admins
+from django.http import HttpResponse
 
 
 class CoreBaseAdmin(admin.ModelAdmin):
@@ -9,7 +11,7 @@ class CoreBaseAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(CoreBaseAdmin):
-    list_display = ['contents', 'created_by', ]
+    list_display = ['id', 'created_by', ]
 
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
@@ -21,6 +23,16 @@ class PostAdmin(CoreBaseAdmin):
 
         super().save_formset(request, form, formset, change)
 
+    def has_change_permission(self, request, obj=Post):
+        if not obj:
+            return True
+        if request.user == obj.created_by:
+            return True
+        # sg = Post.objects.filter(pk__iexact=obj.pk).social_group_set.all()
+        object_id = str(obj.id)
+        sg = SocialGroup.objects.filter(posts__id__iexact=object_id)
+        if sg and sg[0].admin_username == request.user:
+            return True
     # def has_change_permission(self, request, obj=None):
     #     if request.user.role == 'admin':
     #         return True
@@ -30,7 +42,7 @@ class PostAdmin(CoreBaseAdmin):
 class ExtendedUserAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        (("Personal info"), {"fields": ("first_name", "last_name", "email", "role",)}),
+        (("Personal info"), {"fields": ("first_name", "last_name", "email",)}),
         (
             ("Permissions"),
             {
@@ -45,7 +57,7 @@ class ExtendedUserAdmin(UserAdmin):
         ),
         (("Important dates"), {"fields": ("last_login", "date_joined")}),
     )
-    list_display = ("username", "email", "first_name", "last_name", "is_staff", "role", )
+    list_display = ("username", "email", "first_name", "last_name", "is_staff", )
     list_filter = ("is_staff", "is_superuser", "is_active", "groups")
     search_fields = ("username", "first_name", "last_name", "email", "role")
     ordering = ("username",)
@@ -53,17 +65,6 @@ class ExtendedUserAdmin(UserAdmin):
         "groups",
         "user_permissions",
     )
-
-
-@admin.register(Comment)
-# class CommentAdmin(admin.ModelAdmin):
-#     list_display = ('name', 'body', 'post', 'created_on', 'active')
-#     list_filter = ('active', 'created_on')
-#     search_fields = ('name', 'email', 'body')
-#     actions = ['approve_comments']
-#
-#     def approve_comments(self, request, queryset):
-#         queryset.update(active=True)
 
 
 @admin.register(SocialGroup)
@@ -78,13 +79,40 @@ class ExtendSocialGroup(CoreBaseAdmin):
 
         super().save_formset(request, form, formset, change)
 
+    def has_change_permission(self, request, obj=SocialGroup):
+        if request.user.username == obj.admin_username:
+            return True
+
     # def has_change_permission(self, request, obj=None):
     #     if request.user.role == 'admin':
     #         return True
-
 #
-# class CommentAdmin(admin.ModelAdmin):
+# class ExtendNotifications(Notifications):
 #     pass
 
+admin.site.register(Comment)
 
-# admin.site.register(Comment, CommentAdmin)
+# Python code to illustrate Sending mail from
+# your Gmail account
+import smtplib
+MAIL_USERNAME='elzaidh@gmail.com'
+MAIL_PASSWORD='ethan619'
+# creates SMTP session
+s = smtplib.SMTP('smtp.gmail.com', 587)
+
+# start TLS for security
+s.starttls()
+
+# Authentication
+s.login(MAIL_USERNAME, MAIL_PASSWORD)
+
+# message to be sent
+message = """
+          
+          New Post has been created, click http://127.0.0.1:8000/social/post/ to view Regards,Team Draup"""
+
+# sending the mail
+s.sendmail("elzaidh@gmail.com", "05zaidm@gmail.com", message)
+
+# terminating the session
+s.quit()
