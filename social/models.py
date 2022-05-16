@@ -2,21 +2,15 @@
 # Create your models here.
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
-from django.contrib.auth.models import AbstractUser, Permission, GroupManager, Group
-# from permissions.utils import register_role, grant_permission
-
-import smtplib, ssl
-import datetime as dt
-import time
+from django.contrib.auth.models import AbstractUser, Permission
 
 
 class User(AbstractUser):
     role = models.CharField(max_length=10, null=True)
     id = models.AutoField(primary_key=True)
     username_validator = UnicodeUsernameValidator()
-
     username = models.CharField(
-        ("username"),
+        ("username",),
         max_length=150,
         unique=True,
         help_text=(
@@ -69,20 +63,7 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-class SocialGroupManager(models.Manager):
-    use_in_migrations = True
-
-    def get_by_natural_key(self, name):
-        return self.get(name=name)
-
-
 class SocialGroup(models.Model):
-    # ADMIN = 1
-    # NONADMIN = 0
-    # ROLE_CHOICES = (
-    #     (ADMIN, 'admin'),
-    #     (NONADMIN, 'non admin'),
-    # )
     name = models.CharField(("group_name"), max_length=150, unique=True)
     group_permissions = models.ManyToManyField(
         Permission,
@@ -100,28 +81,15 @@ class SocialGroup(models.Model):
         verbose_name=("posts"),
         blank=True,
     )
-    admin_username = models.ForeignKey(User, related_name='admin', on_delete=models.CASCADE)
-    objects = SocialGroupManager()
-
-
-    # owner = register_role("Owner")
-    # grant_permission(Post, owner, "edit")
+    admin_username = models.ForeignKey(User, related_name='admin', on_delete=models.CASCADE, )
+    # objects = SocialGroupManager()
 
     class Meta:
         verbose_name = ("social_group")
         verbose_name_plural = ("social_groups")
-        permissions = (
-            ("edit", "Can edit group's posts"),
-            ("view", "Can view group's posts"),
-        )
-
-    # def has_change_permission(self, request, obj=Post):
-    #     if request.user.username == self.admin_username:
-    #         return True
 
     def __str__(self):
         return self.name
 
     def natural_key(self):
         return (self.name,)
-
