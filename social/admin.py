@@ -6,7 +6,8 @@ from django.http import HttpResponse
 
 
 class CoreBaseAdmin(admin.ModelAdmin):
-    save_on_top = True
+    # save_on_top = True
+    pass
 
 
 @admin.register(Post)
@@ -82,23 +83,27 @@ class ExtendedUserAdmin(UserAdmin):
 
 @admin.register(SocialGroup)
 class ExtendSocialGroup(CoreBaseAdmin):
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
+    fields = ['name', 'group_permissions', 'user_list', 'posts']
 
-        for instance in instances:
-            if not instance.owner:
-                instance.owner = request.user.companyemployee
-            instance.save()
-
-        super().save_formset(request, form, formset, change)
-
-    def has_change_permission(self, request, obj=SocialGroup):
-        if request.user.username == obj.admin_username:
-            return True
+    def save_model(self, request, obj, form, change):
+        obj.admin_username = request.user
+        super().save_model(request, obj, form, change)
 
     def has_change_permission(self, request, obj=None):
-        if request.user.role == 'admin':
+        if not obj or request.user.pk == obj.admin_username.pk:
             return True
+    # def save_formset(self, request, form, formset, change):
+    #     instances = formset.save(commit=False)
+    #
+    #     for instance in instances:
+    #         instance.admin_username = request.user
+    #         instance.save()
+    #
+    #     super().save_formset(request, form, formset, change)
+
+
+
+
 #
 # class ExtendNotifications(Notifications):
 #     pass
